@@ -115,32 +115,33 @@ impl<K: Eq + Ord, V> Node<K, V> {
         }
     }
 
-    pub fn insert(self, key: K, value: V) -> NodeBox<K, V> {
+    pub fn insert(self, key: K, value: V) -> (NodeBox<K, V>, Option<V>) {
         match self {
-            Node::Empty => Node::two((key, value), Node::empty(), Node::empty()),
+            Node::Empty => (Node::two((key, value), Node::empty(), Node::empty()), None),
             Node::Two(two) => Node::insert2(two, key, value),
             Node::Three(three) => Node::insert3(three, key, value),
             Node::Four(four) => {
                 let (mid_item, mid_lhs, mid_rhs) = Node::split_four(four);
                 match key.cmp(&mid_item.0) {
                     std::cmp::Ordering::Less => {
-                        let mid_lhs = mid_lhs.insert(key, value);
-                        Node::two(mid_item, mid_lhs, mid_rhs)
+                        let (mid_lhs, replaced) = mid_lhs.insert(key, value);
+                        (Node::two(mid_item, mid_lhs, mid_rhs), replaced)
                     }
                     std::cmp::Ordering::Equal => {
+                        let replaced = Some(mid_item.1);
                         let mid_item = (mid_item.0, value);
-                        Node::two(mid_item, mid_lhs, mid_rhs)
+                        (Node::two(mid_item, mid_lhs, mid_rhs), replaced)
                     }
                     std::cmp::Ordering::Greater => {
-                        let mid_rhs = mid_rhs.insert(key, value);
-                        Node::two(mid_item, mid_lhs, mid_rhs)
+                        let (mid_rhs, replaced) = mid_rhs.insert(key, value);
+                        (Node::two(mid_item, mid_lhs, mid_rhs), replaced)
                     }
                 }
             }
         }
     }
 
-    fn insert2(two: Two<K, V>, key: K, value: V) -> NodeBox<K, V> {
+    fn insert2(two: Two<K, V>, key: K, value: V) -> (NodeBox<K, V>, Option<V>) {
         let Two {
             size: _,
             item,
@@ -150,78 +151,83 @@ impl<K: Eq + Ord, V> Node<K, V> {
         if lhs.is_empty() {
             assert!(rhs.is_empty());
             match key.cmp(&item.0) {
-                std::cmp::Ordering::Less => {
-                    Node::three((key, value), item, lhs, Node::empty(), rhs)
-                }
-                std::cmp::Ordering::Equal => Node::two((item.0, value), lhs, rhs),
-                std::cmp::Ordering::Greater => {
-                    Node::three(item, (key, value), lhs, Node::empty(), rhs)
-                }
+                std::cmp::Ordering::Less => (
+                    Node::three((key, value), item, lhs, Node::empty(), rhs),
+                    None,
+                ),
+                std::cmp::Ordering::Equal => (Node::two((item.0, value), lhs, rhs), Some(item.1)),
+                std::cmp::Ordering::Greater => (
+                    Node::three(item, (key, value), lhs, Node::empty(), rhs),
+                    None,
+                ),
             }
         } else {
             match key.cmp(&item.0) {
                 std::cmp::Ordering::Less => match *lhs {
                     Node::Empty => {
                         let lhs = Node::two((key, value), Node::empty(), Node::empty());
-                        Node::two(item, lhs, rhs)
+                        (Node::two(item, lhs, rhs), None)
                     }
                     Node::Two(two) => {
-                        let lhs = Node::insert2(two, key, value);
-                        Node::two(item, lhs, rhs)
+                        let (lhs, replaced) = Node::insert2(two, key, value);
+                        (Node::two(item, lhs, rhs), replaced)
                     }
                     Node::Three(three) => {
-                        let lhs = Node::insert3(three, key, value);
-                        Node::two(item, lhs, rhs)
+                        let (lhs, replaced) = Node::insert3(three, key, value);
+                        (Node::two(item, lhs, rhs), replaced)
                     }
                     Node::Four(four) => {
                         let (mid_item, mid_lhs, mid_rhs) = Node::split_four(four);
                         match key.cmp(&mid_item.0) {
                             std::cmp::Ordering::Less => {
-                                let mid_lhs = mid_lhs.insert(key, value);
-                                Node::three(mid_item, item, mid_lhs, mid_rhs, rhs)
+                                let (mid_lhs, replaced) = mid_lhs.insert(key, value);
+                                (Node::three(mid_item, item, mid_lhs, mid_rhs, rhs), replaced)
                             }
                             std::cmp::Ordering::Equal => {
+                                let replaced = Some(mid_item.1);
                                 let mid_item = (mid_item.0, value);
-                                Node::three(mid_item, item, mid_lhs, mid_rhs, rhs)
+                                (Node::three(mid_item, item, mid_lhs, mid_rhs, rhs), replaced)
                             }
                             std::cmp::Ordering::Greater => {
-                                let mid_rhs = mid_rhs.insert(key, value);
-                                Node::three(mid_item, item, mid_lhs, mid_rhs, rhs)
+                                let (mid_rhs, replaced) = mid_rhs.insert(key, value);
+                                (Node::three(mid_item, item, mid_lhs, mid_rhs, rhs), replaced)
                             }
                         }
                     }
                 },
                 std::cmp::Ordering::Equal => {
+                    let replaced = Some(item.1);
                     let item = (item.0, value);
-                    Node::two(item, lhs, rhs)
+                    (Node::two(item, lhs, rhs), replaced)
                 }
                 std::cmp::Ordering::Greater => match *rhs {
                     Node::Empty => {
                         let rhs = Node::two((key, value), Node::empty(), Node::empty());
-                        Node::two(item, lhs, rhs)
+                        (Node::two(item, lhs, rhs), None)
                     }
                     Node::Two(two) => {
-                        let rhs = Node::insert2(two, key, value);
-                        Node::two(item, lhs, rhs)
+                        let (rhs, replaced) = Node::insert2(two, key, value);
+                        (Node::two(item, lhs, rhs), replaced)
                     }
                     Node::Three(three) => {
-                        let rhs = Node::insert3(three, key, value);
-                        Node::two(item, lhs, rhs)
+                        let (rhs, replaced) = Node::insert3(three, key, value);
+                        (Node::two(item, lhs, rhs), replaced)
                     }
                     Node::Four(four) => {
                         let (mid_item, mid_lhs, mid_rhs) = Node::split_four(four);
                         match key.cmp(&mid_item.0) {
                             std::cmp::Ordering::Less => {
-                                let mid_lhs = mid_lhs.insert(key, value);
-                                Node::three(item, mid_item, lhs, mid_lhs, mid_rhs)
+                                let (mid_lhs, replaced) = mid_lhs.insert(key, value);
+                                (Node::three(item, mid_item, lhs, mid_lhs, mid_rhs), replaced)
                             }
                             std::cmp::Ordering::Equal => {
+                                let replaced = Some(mid_item.1);
                                 let mid_item = (mid_item.0, value);
-                                Node::three(item, mid_item, lhs, mid_lhs, mid_rhs)
+                                (Node::three(item, mid_item, lhs, mid_lhs, mid_rhs), replaced)
                             }
                             std::cmp::Ordering::Greater => {
-                                let mid_rhs = mid_rhs.insert(key, value);
-                                Node::three(item, mid_item, lhs, mid_lhs, mid_rhs)
+                                let (mid_rhs, replaced) = mid_rhs.insert(key, value);
+                                (Node::three(item, mid_item, lhs, mid_lhs, mid_rhs), replaced)
                             }
                         }
                     }
@@ -230,7 +236,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         }
     }
 
-    fn insert3(three: Three<K, V>, key: K, value: V) -> NodeBox<K, V> {
+    fn insert3(three: Three<K, V>, key: K, value: V) -> (NodeBox<K, V>, Option<V>) {
         let Three {
             size: _,
             item1,
@@ -243,20 +249,27 @@ impl<K: Eq + Ord, V> Node<K, V> {
             assert!(mid.is_empty());
             assert!(rhs.is_empty());
             match key.cmp(&item1.0) {
-                std::cmp::Ordering::Less => {
-                    Node::four((key, value), item1, item2, lhs, mid, Node::empty(), rhs)
-                }
-                std::cmp::Ordering::Equal => Node::three((item1.0, value), item2, lhs, mid, rhs),
+                std::cmp::Ordering::Less => (
+                    Node::four((key, value), item1, item2, lhs, mid, Node::empty(), rhs),
+                    None,
+                ),
+                std::cmp::Ordering::Equal => (
+                    Node::three((item1.0, value), item2, lhs, mid, rhs),
+                    Some(item1.1),
+                ),
                 std::cmp::Ordering::Greater => match key.cmp(&item2.0) {
-                    std::cmp::Ordering::Less => {
-                        Node::four(item1, (key, value), item2, lhs, mid, Node::empty(), rhs)
-                    }
-                    std::cmp::Ordering::Equal => {
-                        Node::three(item1, (item2.0, value), lhs, mid, rhs)
-                    }
-                    std::cmp::Ordering::Greater => {
-                        Node::four(item1, item2, (key, value), lhs, mid, Node::empty(), rhs)
-                    }
+                    std::cmp::Ordering::Less => (
+                        Node::four(item1, (key, value), item2, lhs, mid, Node::empty(), rhs),
+                        None,
+                    ),
+                    std::cmp::Ordering::Equal => (
+                        Node::three(item1, (item2.0, value), lhs, mid, rhs),
+                        Some(item2.1),
+                    ),
+                    std::cmp::Ordering::Greater => (
+                        Node::four(item1, item2, (key, value), lhs, mid, Node::empty(), rhs),
+                        None,
+                    ),
                 },
             }
         } else {
@@ -264,97 +277,100 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 std::cmp::Ordering::Less => match *lhs {
                     Node::Empty => {
                         let lhs = Node::two((key, value), Node::empty(), Node::empty());
-                        Node::three(item1, item2, lhs, mid, rhs)
+                        (Node::three(item1, item2, lhs, mid, rhs), None)
                     }
                     Node::Two(two) => {
-                        let lhs = Node::insert2(two, key, value);
-                        Node::three(item1, item2, lhs, mid, rhs)
+                        let (lhs, replaced) = Node::insert2(two, key, value);
+                        (Node::three(item1, item2, lhs, mid, rhs), replaced)
                     }
                     Node::Three(three) => {
-                        let lhs = Node::insert3(three, key, value);
-                        Node::three(item1, item2, lhs, mid, rhs)
+                        let (lhs, replaced) = Node::insert3(three, key, value);
+                        (Node::three(item1, item2, lhs, mid, rhs), replaced)
                     }
                     Node::Four(four) => {
                         let (mid_item, mid_lhs, mid_rhs) = Node::split_four(four);
                         match key.cmp(&mid_item.0) {
                             std::cmp::Ordering::Less => {
-                                let mid_lhs = mid_lhs.insert(key, value);
-                                Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs)
+                                let (mid_lhs, replaced) = mid_lhs.insert(key, value);
+                                (Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs), replaced)
                             }
                             std::cmp::Ordering::Equal => {
+                                let replaced = Some(mid_item.1);
                                 let mid_item = (mid_item.0, value);
-                                Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs)
+                                (Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs), replaced)
                             }
                             std::cmp::Ordering::Greater => {
-                                let mid_rhs = mid_rhs.insert(key, value);
-                                Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs)
+                                let (mid_rhs, replaced) = mid_rhs.insert(key, value);
+                                (Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs), replaced)
                             }
                         }
                     }
                 },
-                std::cmp::Ordering::Equal => Node::three((item1.0, value), item2, lhs, mid, rhs),
+                std::cmp::Ordering::Equal => (Node::three((item1.0, value), item2, lhs, mid, rhs), Some(item1.1)),
                 std::cmp::Ordering::Greater => match key.cmp(&item2.0) {
                     std::cmp::Ordering::Less => match *mid {
                         Node::Empty => {
                             let mid = Node::two((key, value), Node::empty(), Node::empty());
-                            Node::three(item1, item2, lhs, mid, rhs)
+                            (Node::three(item1, item2, lhs, mid, rhs), None)
                         }
                         Node::Two(two) => {
-                            let mid = Node::insert2(two, key, value);
-                            Node::three(item1, item2, lhs, mid, rhs)
+                            let (mid, replaced) = Node::insert2(two, key, value);
+                            (Node::three(item1, item2, lhs, mid, rhs), replaced)
                         }
                         Node::Three(three) => {
-                            let mid = Node::insert3(three, key, value);
-                            Node::three(item1, item2, lhs, mid, rhs)
+                            let (mid, replaced) = Node::insert3(three, key, value);
+                            (Node::three(item1, item2, lhs, mid, rhs), replaced)
                         }
                         Node::Four(four) => {
                             let (mid_item, mid_lhs, mid_rhs) = Node::split_four(four);
                             match key.cmp(&mid_item.0) {
                                 std::cmp::Ordering::Less => {
-                                    let mid_lhs = mid_lhs.insert(key, value);
-                                    Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs)
+                                    let (mid_lhs, replaced) = mid_lhs.insert(key, value);
+                                    (Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs), replaced)
                                 }
                                 std::cmp::Ordering::Equal => {
+                                    let replaced = Some(mid_item.1);
                                     let mid_item = (mid_item.0, value);
-                                    Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs)
+                                    (Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs), replaced)
                                 }
                                 std::cmp::Ordering::Greater => {
-                                    let mid_rhs = mid_rhs.insert(key, value);
-                                    Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs)
+                                    let (mid_rhs, replaced) = mid_rhs.insert(key, value);
+                                    (Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs), replaced)
                                 }
                             }
                         }
                     },
                     std::cmp::Ordering::Equal => {
-                        Node::three(item1, (item2.0, value), lhs, mid, rhs)
+                        (Node::three(item1, (item2.0, value), lhs, mid, rhs), Some(item2.1))
                     }
                     std::cmp::Ordering::Greater => match *rhs {
                         Node::Empty => {
                             let rhs = Node::two((key, value), Node::empty(), Node::empty());
-                            Node::three(item1, item2, lhs, mid, rhs)
+                            (Node::three(item1, item2, lhs, mid, rhs), None)
                         }
                         Node::Two(two) => {
-                            let rhs = Node::insert2(two, key, value);
-                            Node::three(item1, item2, lhs, mid, rhs)
+                            let (rhs, replaced) = Node::insert2(two, key, value);
+                            (Node::three(item1, item2, lhs, mid, rhs), replaced)
                         }
                         Node::Three(three) => {
-                            let rhs = Node::insert3(three, key, value);
-                            Node::three(item1, item2, lhs, mid, rhs)
+                            let (rhs, replaced) = Node::insert3(three, key, value);
+                            (Node::three(item1, item2, lhs, mid, rhs), replaced)
                         }
                         Node::Four(four) => {
                             let (mid_item, mid_lhs, mid_rhs) = Node::split_four(four);
                             match key.cmp(&mid_item.0) {
                                 std::cmp::Ordering::Less => {
-                                    let mid_lhs = mid_lhs.insert(key, value);
-                                    Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs)
+                                    let (mid_lhs, replaced) = mid_lhs.insert(key, value);
+                                    (Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs), replaced)
                                 }
                                 std::cmp::Ordering::Equal => {
+                                    let replaced = Some(mid_item.1);
                                     let mid_item = (mid_item.0, value);
-                                    Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs)
+                                    (Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs), replaced)
                                 }
                                 std::cmp::Ordering::Greater => {
-                                    let mid_rhs = mid_rhs.insert(key, value);
-                                    Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs)
+                                    let (mid_rhs, replaced) = mid_rhs.insert(key, value);
+                                    (Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs), replaced)
                                 }
                             }
                         }
@@ -1418,11 +1434,12 @@ impl<K: Eq + Ord, V> Tree234<K, V> {
         self.root.get(key)
     }
 
-    pub fn insert(&mut self, key: K, value: V) {
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let mut root = Node::empty();
         std::mem::swap(&mut self.root, &mut root);
-        let root = root.insert(key, value);
+        let (root, replaced) = root.insert(key, value);
         self.root = root;
+        replaced
     }
 
     pub fn remove(&mut self, key: &K) -> Option<V> {
@@ -1628,13 +1645,16 @@ mod tests {
             tree.insert(x, i);
             assert_eq!(tree.size(), i + 1);
         }
-        let ys = tree.iter().map(|item| item.clone()).collect::<Vec<(i32,usize)>>();
+        let ys = tree
+            .iter()
+            .map(|item| item.clone())
+            .collect::<Vec<(i32, usize)>>();
         assert_eq!(xs.len(), ys.len());
         for i in 0..n {
             assert_eq!(ys[i].0, i as i32);
         }
     }
-    
+
     #[test]
     fn structures_1() {
         let mut rng = StdRng::seed_from_u64(17u64);
