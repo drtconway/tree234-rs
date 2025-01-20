@@ -292,21 +292,33 @@ impl<K: Eq + Ord, V> Node<K, V> {
                         match key.cmp(&mid_item.0) {
                             std::cmp::Ordering::Less => {
                                 let (mid_lhs, replaced) = mid_lhs.insert(key, value);
-                                (Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs), replaced)
+                                (
+                                    Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs),
+                                    replaced,
+                                )
                             }
                             std::cmp::Ordering::Equal => {
                                 let replaced = Some(mid_item.1);
                                 let mid_item = (mid_item.0, value);
-                                (Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs), replaced)
+                                (
+                                    Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs),
+                                    replaced,
+                                )
                             }
                             std::cmp::Ordering::Greater => {
                                 let (mid_rhs, replaced) = mid_rhs.insert(key, value);
-                                (Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs), replaced)
+                                (
+                                    Node::four(mid_item, item1, item2, mid_lhs, mid_rhs, mid, rhs),
+                                    replaced,
+                                )
                             }
                         }
                     }
                 },
-                std::cmp::Ordering::Equal => (Node::three((item1.0, value), item2, lhs, mid, rhs), Some(item1.1)),
+                std::cmp::Ordering::Equal => (
+                    Node::three((item1.0, value), item2, lhs, mid, rhs),
+                    Some(item1.1),
+                ),
                 std::cmp::Ordering::Greater => match key.cmp(&item2.0) {
                     std::cmp::Ordering::Less => match *mid {
                         Node::Empty => {
@@ -326,23 +338,39 @@ impl<K: Eq + Ord, V> Node<K, V> {
                             match key.cmp(&mid_item.0) {
                                 std::cmp::Ordering::Less => {
                                     let (mid_lhs, replaced) = mid_lhs.insert(key, value);
-                                    (Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs), replaced)
+                                    (
+                                        Node::four(
+                                            item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs,
+                                        ),
+                                        replaced,
+                                    )
                                 }
                                 std::cmp::Ordering::Equal => {
                                     let replaced = Some(mid_item.1);
                                     let mid_item = (mid_item.0, value);
-                                    (Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs), replaced)
+                                    (
+                                        Node::four(
+                                            item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs,
+                                        ),
+                                        replaced,
+                                    )
                                 }
                                 std::cmp::Ordering::Greater => {
                                     let (mid_rhs, replaced) = mid_rhs.insert(key, value);
-                                    (Node::four(item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs), replaced)
+                                    (
+                                        Node::four(
+                                            item1, mid_item, item2, lhs, mid_lhs, mid_rhs, rhs,
+                                        ),
+                                        replaced,
+                                    )
                                 }
                             }
                         }
                     },
-                    std::cmp::Ordering::Equal => {
-                        (Node::three(item1, (item2.0, value), lhs, mid, rhs), Some(item2.1))
-                    }
+                    std::cmp::Ordering::Equal => (
+                        Node::three(item1, (item2.0, value), lhs, mid, rhs),
+                        Some(item2.1),
+                    ),
                     std::cmp::Ordering::Greater => match *rhs {
                         Node::Empty => {
                             let rhs = Node::two((key, value), Node::empty(), Node::empty());
@@ -361,16 +389,31 @@ impl<K: Eq + Ord, V> Node<K, V> {
                             match key.cmp(&mid_item.0) {
                                 std::cmp::Ordering::Less => {
                                     let (mid_lhs, replaced) = mid_lhs.insert(key, value);
-                                    (Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs), replaced)
+                                    (
+                                        Node::four(
+                                            item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs,
+                                        ),
+                                        replaced,
+                                    )
                                 }
                                 std::cmp::Ordering::Equal => {
                                     let replaced = Some(mid_item.1);
                                     let mid_item = (mid_item.0, value);
-                                    (Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs), replaced)
+                                    (
+                                        Node::four(
+                                            item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs,
+                                        ),
+                                        replaced,
+                                    )
                                 }
                                 std::cmp::Ordering::Greater => {
                                     let (mid_rhs, replaced) = mid_rhs.insert(key, value);
-                                    (Node::four(item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs), replaced)
+                                    (
+                                        Node::four(
+                                            item1, item2, mid_item, lhs, mid, mid_lhs, mid_rhs,
+                                        ),
+                                        replaced,
+                                    )
                                 }
                             }
                         }
@@ -418,14 +461,20 @@ impl<K: Eq + Ord, V> Node<K, V> {
             std::cmp::Ordering::Less => {
                 let (lhs, result, reduced) = Node::remove(*lhs, key);
                 match reduced {
-                    true => Node::fix2_lhs(item, lhs, rhs, result),
+                    true => {
+                        let (node, reduced) = Node::fix2_lhs(item, lhs, rhs);
+                        (node, result, reduced)
+                    }
                     false => (Node::two(item, lhs, rhs), result, false),
                 }
             }
             std::cmp::Ordering::Equal => {
                 if let Some((small, rhs, reduced)) = Node::remove_smallest(*rhs) {
                     match reduced {
-                        true => Node::fix2_rhs(small, lhs, rhs, Some(item.1)),
+                        true => {
+                            let (node, reduced) = Node::fix2_rhs(small, lhs, rhs);
+                            (node, Some(item.1), reduced)
+                        }
                         false => (Node::two(small, lhs, rhs), Some(item.1), false),
                     }
                 } else {
@@ -435,7 +484,10 @@ impl<K: Eq + Ord, V> Node<K, V> {
             std::cmp::Ordering::Greater => {
                 let (rhs, result, reduced) = Node::remove(*rhs, key);
                 match reduced {
-                    true => Node::fix2_rhs(item, lhs, rhs, result),
+                    true => {
+                        let (node, reduced) = Node::fix2_rhs(item, lhs, rhs);
+                        (node, result, reduced)
+                    }
                     false => (Node::two(item, lhs, rhs), result, false),
                 }
             }
@@ -455,50 +507,59 @@ impl<K: Eq + Ord, V> Node<K, V> {
             std::cmp::Ordering::Less => {
                 let (lhs, result, reduced) = Node::remove(*lhs, key);
                 match reduced {
-                    true => Node::fix3_lhs(item1, item2, lhs, mid, rhs, result),
+                    true => {
+                        let (node, reduced) = Node::fix3_lhs(item1, item2, lhs, mid, rhs);
+                        (node, result, reduced)
+                    }
                     false => (Node::three(item1, item2, lhs, mid, rhs), result, false),
                 }
             }
             std::cmp::Ordering::Equal => {
+                let result = Some(item1.1);
                 if let Some((small, mid, reduced)) = Node::remove_smallest(*mid) {
                     match reduced {
-                        true => Node::fix3_mid(small, item2, lhs, mid, rhs, Some(item1.1)),
-                        false => (
-                            Node::three(small, item2, lhs, mid, rhs),
-                            Some(item1.1),
-                            false,
-                        ),
+                        true => {
+                            let (node, reduced) = Node::fix3_mid(small, item2, lhs, mid, rhs);
+                            (node, result, reduced)
+                        }
+                        false => (Node::three(small, item2, lhs, mid, rhs), result, false),
                     }
                 } else {
-                    (Node::two(item2, lhs, rhs), Some(item1.1), false)
+                    (Node::two(item2, lhs, rhs), result, false)
                 }
             }
             std::cmp::Ordering::Greater => match key.cmp(&item2.0) {
                 std::cmp::Ordering::Less => {
                     let (mid, result, reduced) = Node::remove(*mid, key);
                     match reduced {
-                        true => Node::fix3_mid(item1, item2, lhs, mid, rhs, result),
+                        true => {
+                            let (node, reduced) = Node::fix3_mid(item1, item2, lhs, mid, rhs);
+                            (node, result, reduced)
+                        }
                         false => (Node::three(item1, item2, lhs, mid, rhs), result, false),
                     }
                 }
                 std::cmp::Ordering::Equal => {
+                    let result = Some(item2.1);
                     if let Some((small, rhs, reduced)) = Node::remove_smallest(*rhs) {
                         match reduced {
-                            true => Node::fix3_rhs(item1, small, lhs, mid, rhs, Some(item2.1)),
-                            false => (
-                                Node::three(item1, small, lhs, mid, rhs),
-                                Some(item2.1),
-                                false,
-                            ),
+                            true => {
+                                let (node, reduced) = Node::fix3_rhs(item1, small, lhs, mid, rhs);
+                                (node, result, reduced)
+                            }
+                            false => (Node::three(item1, small, lhs, mid, rhs), result, false),
                         }
                     } else {
-                        (Node::two(item1, lhs, mid), Some(item2.1), false)
+                        (Node::two(item1, lhs, mid), result, false)
                     }
                 }
                 std::cmp::Ordering::Greater => {
                     let (rhs, result, reduced) = Node::remove(*rhs, key);
                     match reduced {
-                        true => Node::fix3_rhs(item1, item2, lhs, mid, rhs, result),
+                        true => {
+                            let (node, reduced) = Node::fix3_rhs(item1, item2, lhs, mid, rhs);
+                            (node, result, reduced)
+                        }
                         false => (Node::three(item1, item2, lhs, mid, rhs), result, false),
                     }
                 }
@@ -523,7 +584,9 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     let (lhs, result, reduced) = Node::remove(*lhs, key);
                     match reduced {
                         true => {
-                            Node::fix4_lhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs, result)
+                            let (node, reduced) =
+                                Node::fix4_lhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs);
+                            (node, result, reduced)
                         }
                         false => (
                             Node::four(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs),
@@ -533,38 +596,33 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     }
                 }
                 std::cmp::Ordering::Equal => {
+                    let result = Some(item1.1);
                     if let Some((small, lhs_mid, reduced)) = Node::remove_smallest(*lhs_mid) {
                         match reduced {
-                            true => Node::fix4_lhs_mid(
-                                small,
-                                item2,
-                                item3,
-                                lhs,
-                                lhs_mid,
-                                rhs_mid,
-                                rhs,
-                                Some(item1.1),
-                            ),
+                            true => {
+                                let (node, reduced) = Node::fix4_lhs_mid(
+                                    small, item2, item3, lhs, lhs_mid, rhs_mid, rhs,
+                                );
+                                (node, result, reduced)
+                            }
                             false => (
                                 Node::four(small, item2, item3, lhs, lhs_mid, rhs_mid, rhs),
-                                Some(item1.1),
+                                result,
                                 false,
                             ),
                         }
                     } else {
-                        (
-                            Node::three(item2, item3, lhs, rhs_mid, rhs),
-                            Some(item1.1),
-                            false,
-                        )
+                        (Node::three(item2, item3, lhs, rhs_mid, rhs), result, false)
                     }
                 }
                 std::cmp::Ordering::Greater => {
                     let (lhs_mid, result, reduced) = Node::remove(*lhs_mid, key);
                     match reduced {
-                        true => Node::fix4_lhs_mid(
-                            item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs, result,
-                        ),
+                        true => {
+                            let (node, reduced) =
+                                Node::fix4_lhs_mid(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs);
+                            (node, result, reduced)
+                        }
                         false => (
                             Node::four(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs),
                             result,
@@ -574,39 +632,33 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 }
             },
             std::cmp::Ordering::Equal => {
+                let result = Some(item2.1);
                 if let Some((small, rhs_mid, reduced)) = Node::remove_smallest(*rhs_mid) {
                     match reduced {
-                        true => Node::fix4_rhs_mid(
-                            item1,
-                            small,
-                            item3,
-                            lhs,
-                            lhs_mid,
-                            rhs_mid,
-                            rhs,
-                            Some(item2.1),
-                        ),
+                        true => {
+                            let (node, reduced) =
+                                Node::fix4_rhs_mid(item1, small, item3, lhs, lhs_mid, rhs_mid, rhs);
+                            (node, result, reduced)
+                        }
                         false => (
                             Node::four(item1, small, item3, lhs, lhs_mid, rhs_mid, rhs),
-                            Some(item2.1),
+                            result,
                             false,
                         ),
                     }
                 } else {
-                    (
-                        Node::three(item1, item3, lhs, lhs_mid, rhs),
-                        Some(item2.1),
-                        false,
-                    )
+                    (Node::three(item1, item3, lhs, lhs_mid, rhs), result, false)
                 }
             }
             std::cmp::Ordering::Greater => match key.cmp(&item3.0) {
                 std::cmp::Ordering::Less => {
                     let (rhs_mid, result, reduced) = Node::remove(*rhs_mid, key);
                     match reduced {
-                        true => Node::fix4_rhs_mid(
-                            item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs, result,
-                        ),
+                        true => {
+                            let (node, reduced) =
+                                Node::fix4_rhs_mid(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs);
+                            (node, result, reduced)
+                        }
                         false => (
                             Node::four(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs),
                             result,
@@ -615,9 +667,10 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     }
                 }
                 std::cmp::Ordering::Equal => {
+                    let result = Some(item3.1);
                     if let Some((small, rhs, reduced)) = Node::remove_smallest(*rhs) {
                         match reduced {
-                            true => Node::fix4_rhs(
+                            true => { let (node, reduced) = Node::fix4_rhs(
                                 item1,
                                 item2,
                                 small,
@@ -625,18 +678,17 @@ impl<K: Eq + Ord, V> Node<K, V> {
                                 lhs_mid,
                                 rhs_mid,
                                 rhs,
-                                Some(item3.1),
-                            ),
+                            ); (node, result, reduced) },
                             false => (
                                 Node::four(item1, item2, small, lhs, lhs_mid, rhs_mid, rhs),
-                                Some(item3.1),
+                                result,
                                 false,
                             ),
                         }
                     } else {
                         (
                             Node::three(item1, item2, lhs, lhs_mid, rhs_mid),
-                            Some(item3.1),
+                            result,
                             false,
                         )
                     }
@@ -645,7 +697,8 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     let (rhs, result, reduced) = Node::remove(*rhs, key);
                     match reduced {
                         true => {
-                            Node::fix4_rhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs, result)
+                            let (node, reduced) = Node::fix4_rhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs);
+                            (node, result, reduced)
                         }
                         false => (
                             Node::four(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs),
@@ -680,7 +733,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
             let (small, lhs, reduced) = Node::remove_smallest(*lhs).unwrap();
             match reduced {
                 true => {
-                    let (node, _, reduced) = Node::fix2_lhs(item, lhs, rhs, None);
+                    let (node, reduced) = Node::fix2_lhs(item, lhs, rhs);
                     Some((small, node, reduced))
                 }
                 false => Some((small, Node::two(item, lhs, rhs), false)),
@@ -703,7 +756,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
             let (small, lhs, reduced) = Node::remove_smallest(*lhs).unwrap();
             match reduced {
                 true => {
-                    let (node, _, reduced) = Node::fix3_lhs(item1, item2, lhs, mid, rhs, None);
+                    let (node, reduced) = Node::fix3_lhs(item1, item2, lhs, mid, rhs);
                     Some((small, node, reduced))
                 }
                 false => Some((small, Node::three(item1, item2, lhs, mid, rhs), false)),
@@ -732,8 +785,8 @@ impl<K: Eq + Ord, V> Node<K, V> {
             let (small, lhs, reduced) = Node::remove_smallest(*lhs).unwrap();
             match reduced {
                 true => {
-                    let (node, _, reduced) =
-                        Node::fix4_lhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs, None);
+                    let (node, reduced) =
+                        Node::fix4_lhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs);
                     Some((small, node, reduced))
                 }
                 false => Some((
@@ -800,8 +853,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_item: Item<K, V>,
         orig_lhs: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_rhs {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -811,11 +863,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     lhs,
                     rhs,
                 } = two;
-                (
-                    Node::three(orig_item, item, orig_lhs, lhs, rhs),
-                    result,
-                    true,
-                )
+                (Node::three(orig_item, item, orig_lhs, lhs, rhs), true)
             }
             Node::Three(three) => {
                 let Three {
@@ -828,7 +876,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 } = three;
                 let node1 = Node::two(orig_item, orig_lhs, lhs);
                 let node2 = Node::two(item2, mid, rhs);
-                (Node::two(item1, node1, node2), result, false)
+                (Node::two(item1, node1, node2), false)
             }
             Node::Four(four) => {
                 let Four {
@@ -843,7 +891,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 } = four;
                 let node1 = Node::three(orig_item, item1, orig_lhs, lhs, lhs_mid);
                 let node2 = Node::two(item3, rhs_mid, rhs);
-                (Node::two(item2, node1, node2), result, false)
+                (Node::two(item2, node1, node2), false)
             }
         }
     }
@@ -852,8 +900,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_item: Item<K, V>,
         orig_lhs: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_lhs {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -863,11 +910,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     lhs,
                     rhs,
                 } = two;
-                (
-                    Node::three(item, orig_item, lhs, rhs, orig_rhs),
-                    result,
-                    true,
-                )
+                (Node::three(item, orig_item, lhs, rhs, orig_rhs), true)
             }
             Node::Three(three) => {
                 let Three {
@@ -880,7 +923,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 } = three;
                 let node1 = Node::two(item1, lhs, mid);
                 let node2 = Node::two(orig_item, rhs, orig_rhs);
-                (Node::two(item2, node1, node2), result, false)
+                (Node::two(item2, node1, node2), false)
             }
             Node::Four(four) => {
                 let Four {
@@ -895,7 +938,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 } = four;
                 let node1 = Node::three(item1, item2, lhs, lhs_mid, rhs_mid);
                 let node2 = Node::two(orig_item, rhs, orig_rhs);
-                (Node::two(item3, node1, node2), result, false)
+                (Node::two(item3, node1, node2), false)
             }
         }
     }
@@ -906,8 +949,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_lhs: NodeBox<K, V>,
         orig_mid: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_mid {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -918,7 +960,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     rhs,
                 } = two;
                 let node = Node::three(orig_item1, item, orig_lhs, lhs, rhs);
-                (Node::two(orig_item2, node, orig_rhs), result, false)
+                (Node::two(orig_item2, node, orig_rhs), false)
             }
             Node::Three(three) => {
                 let Three {
@@ -933,7 +975,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node2 = Node::two(item2, mid, rhs);
                 (
                     Node::three(item1, orig_item2, node1, node2, orig_rhs),
-                    result,
                     false,
                 )
             }
@@ -952,7 +993,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node2 = Node::three(item2, item3, lhs_mid, rhs_mid, rhs);
                 (
                     Node::three(item1, orig_item2, node1, node2, orig_rhs),
-                    result,
                     false,
                 )
             }
@@ -965,8 +1005,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_lhs: NodeBox<K, V>,
         orig_mid: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_lhs {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -977,7 +1016,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     rhs,
                 } = two;
                 let node = Node::three(item, orig_item1, lhs, rhs, orig_mid);
-                (Node::two(orig_item2, node, orig_rhs), result, false)
+                (Node::two(orig_item2, node, orig_rhs), false)
             }
             Node::Three(three) => {
                 let Three {
@@ -992,7 +1031,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node2 = Node::two(orig_item1, rhs, orig_mid);
                 (
                     Node::three(item2, orig_item2, node1, node2, orig_rhs),
-                    result,
                     false,
                 )
             }
@@ -1009,7 +1047,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 } = four;
                 let node1 = Node::three(item1, item2, lhs, lhs_mid, rhs_mid);
                 let node2 = Node::two(orig_item1, rhs, orig_mid);
-                (Node::two(item3, node1, node2), result, false)
+                (Node::two(item3, node1, node2), false)
             }
         }
     }
@@ -1020,8 +1058,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_lhs: NodeBox<K, V>,
         orig_mid: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_mid {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -1032,7 +1069,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     rhs,
                 } = two;
                 let node = Node::three(item, orig_item2, lhs, rhs, orig_rhs);
-                (Node::two(orig_item1, orig_lhs, node), result, false)
+                (Node::two(orig_item1, orig_lhs, node), false)
             }
             Node::Three(three) => {
                 let Three {
@@ -1047,7 +1084,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node2 = Node::two(orig_item2, rhs, orig_rhs);
                 (
                     Node::three(orig_item1, item2, orig_lhs, node1, node2),
-                    result,
                     false,
                 )
             }
@@ -1066,7 +1102,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node2 = Node::two(orig_item2, rhs, orig_rhs);
                 (
                     Node::three(orig_item1, item3, orig_lhs, node1, node2),
-                    result,
                     false,
                 )
             }
@@ -1081,8 +1116,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_lhs_mid: NodeBox<K, V>,
         orig_rhs_mid: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_lhs_mid {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -1095,7 +1129,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node = Node::three(orig_item1, item, orig_lhs, lhs, rhs);
                 (
                     Node::three(orig_item2, orig_item3, node, orig_rhs_mid, orig_rhs),
-                    result,
                     false,
                 )
             }
@@ -1120,7 +1153,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                         orig_rhs_mid,
                         orig_rhs,
                     ),
-                    result,
                     false,
                 )
             }
@@ -1147,7 +1179,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                         orig_rhs_mid,
                         orig_rhs,
                     ),
-                    result,
                     false,
                 )
             }
@@ -1162,8 +1193,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_lhs_mid: NodeBox<K, V>,
         orig_rhs_mid: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_rhs_mid {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -1176,7 +1206,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node = Node::three(orig_item2, item, orig_lhs_mid, lhs, rhs);
                 (
                     Node::three(orig_item1, orig_item3, orig_lhs, node, orig_rhs),
-                    result,
                     false,
                 )
             }
@@ -1195,7 +1224,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     Node::four(
                         orig_item1, item1, orig_item3, orig_lhs, node1, node2, orig_rhs,
                     ),
-                    result,
                     false,
                 )
             }
@@ -1216,7 +1244,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     Node::four(
                         orig_item1, item1, orig_item3, orig_lhs, node1, node2, orig_rhs,
                     ),
-                    result,
                     false,
                 )
             }
@@ -1231,8 +1258,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_lhs_mid: NodeBox<K, V>,
         orig_rhs_mid: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_rhs {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -1245,7 +1271,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node = Node::three(orig_item3, item, orig_rhs_mid, lhs, rhs);
                 (
                     Node::three(orig_item1, orig_item2, orig_lhs, orig_lhs_mid, node),
-                    result,
                     false,
                 )
             }
@@ -1270,7 +1295,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                         node1,
                         node2,
                     ),
-                    result,
                     false,
                 )
             }
@@ -1297,7 +1321,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                         node1,
                         node2,
                     ),
-                    result,
                     false,
                 )
             }
@@ -1312,8 +1335,7 @@ impl<K: Eq + Ord, V> Node<K, V> {
         orig_lhs_mid: NodeBox<K, V>,
         orig_rhs_mid: NodeBox<K, V>,
         orig_rhs: NodeBox<K, V>,
-        result: Option<V>,
-    ) -> (NodeBox<K, V>, Option<V>, bool) {
+    ) -> (NodeBox<K, V>, bool) {
         match *orig_rhs_mid {
             Node::Empty => unreachable!(),
             Node::Two(two) => {
@@ -1326,7 +1348,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                 let node = Node::three(item, orig_item3, lhs, rhs, orig_rhs);
                 (
                     Node::three(orig_item1, orig_item2, orig_lhs, orig_lhs_mid, node),
-                    result,
                     false,
                 )
             }
@@ -1351,7 +1372,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                         node1,
                         node2,
                     ),
-                    result,
                     false,
                 )
             }
@@ -1378,7 +1398,6 @@ impl<K: Eq + Ord, V> Node<K, V> {
                         node1,
                         node2,
                     ),
-                    result,
                     false,
                 )
             }
