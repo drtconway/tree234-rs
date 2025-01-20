@@ -670,15 +670,11 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     let result = Some(item3.1);
                     if let Some((small, rhs, reduced)) = Node::remove_smallest(*rhs) {
                         match reduced {
-                            true => { let (node, reduced) = Node::fix4_rhs(
-                                item1,
-                                item2,
-                                small,
-                                lhs,
-                                lhs_mid,
-                                rhs_mid,
-                                rhs,
-                            ); (node, result, reduced) },
+                            true => {
+                                let (node, reduced) =
+                                    Node::fix4_rhs(item1, item2, small, lhs, lhs_mid, rhs_mid, rhs);
+                                (node, result, reduced)
+                            }
                             false => (
                                 Node::four(item1, item2, small, lhs, lhs_mid, rhs_mid, rhs),
                                 result,
@@ -697,7 +693,8 @@ impl<K: Eq + Ord, V> Node<K, V> {
                     let (rhs, result, reduced) = Node::remove(*rhs, key);
                     match reduced {
                         true => {
-                            let (node, reduced) = Node::fix4_rhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs);
+                            let (node, reduced) =
+                                Node::fix4_rhs(item1, item2, item3, lhs, lhs_mid, rhs_mid, rhs);
                             (node, result, reduced)
                         }
                         false => (
